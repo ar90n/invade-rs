@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use anyhow::Result;
 use js_sys::ArrayBuffer;
-use std::any;
 use std::future::Future;
 use web_sys::HtmlImageElement;
 
@@ -11,7 +10,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::Response;
-use web_sys::{Document, Element, HtmlCanvasElement, Window};
+use web_sys::{Document, HtmlCanvasElement, Window};
 
 pub type LoopClosure = Closure<dyn FnMut(f64)>;
 
@@ -24,10 +23,11 @@ pub fn document() -> Result<Document> {
         .document()
         .ok_or_else(|| anyhow!("No Ducment Found"))
 }
+
 pub fn canvas() -> Result<HtmlCanvasElement> {
     document()?
         .get_element_by_id("canvas")
-        .ok_or_else(|| anyhow!("Mp Camvas Element found with ID 'canvas'"))?
+        .ok_or_else(|| anyhow!("No Canvas Element found with ID 'canvas'"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()
         .map_err(|element| anyhow!("Error converting {:#?} to HtmlCanvasElement", element))
 }
@@ -48,13 +48,13 @@ where
     wasm_bindgen_futures::spawn_local(future)
 }
 
-pub async fn fetch_with_str(resource: &str) -> Result<JsValue> {
+async fn fetch_with_str(resource: &str) -> Result<JsValue> {
     JsFuture::from(window()?.fetch_with_str(resource))
         .await
         .map_err(|err| anyhow!("error fetching {:#?}", err))
 }
 
-pub async fn fetch_response(resource: &str) -> Result<Response> {
+async fn fetch_response(resource: &str) -> Result<Response> {
     fetch_with_str(resource)
         .await?
         .dyn_into()
@@ -115,29 +115,4 @@ pub fn now() -> Result<f64> {
         .performance()
         .ok_or_else(|| anyhow!("Performance object not found"))?
         .now())
-}
-
-pub fn draw_ui(html: &str) -> Result<()> {
-    find_ui()?
-        .insert_adjacent_html("afterbegin", html)
-        .map_err(|err| anyhow!("Could not insert html {:#?}", err))
-}
-
-pub fn hide_ui() -> Result<()> {
-    let ui = find_ui()?;
-
-    if let Some(child) = ui.first_child() {
-        ui.remove_child(&child)
-            .map(|_remove_child| ())
-            .map_err(|err| anyhow!("Failed to remove child {:#?}", err))
-    } else {
-        Ok(())
-    }
-}
-
-fn find_ui() -> Result<Element> {
-    document().and_then(|doc| {
-        doc.get_element_by_id("ui")
-            .ok_or_else(|| anyhow!("UI element not found"))
-    })
 }

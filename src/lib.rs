@@ -2,9 +2,8 @@ use wasm_bindgen::prelude::*;
 use web_sys::console;
 
 #[macro_use]
-mod browser;
-//mod engine;
-mod sound;
+mod engine;
+mod invade_rs;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
@@ -22,14 +21,14 @@ pub fn main_js() -> Result<(), JsValue> {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
-    browser::spawn_local(async move {
+    engine::browser::spawn_local(async move {
         // Your code goes here!
         console::log_1(&JsValue::from_str("Hello world!"));
-        //let game = WalkTheDogGame::new();
 
-        //GameLoop::start(game)
-        //    .await
-        //    .expect("Could not start game loop");
+        let game = invade_rs::InvadeRs::new();
+        engine::GameLoop::start(game)
+            .await
+            .expect("Could not start game loop");
     });
     Ok(())
 }
