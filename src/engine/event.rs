@@ -1,6 +1,5 @@
-use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::rc::Rc;
 
 use anyhow::Result;
 use futures::channel::mpsc::{unbounded, UnboundedReceiver};
@@ -8,12 +7,12 @@ use wasm_bindgen::prelude::*;
 
 use super::browser;
 
-pub enum KeyPress {
+enum KeyPress {
     KeyUp(web_sys::KeyboardEvent),
     KeyDown(web_sys::KeyboardEvent),
 }
 
-pub fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
+fn prepare_key_input() -> Result<UnboundedReceiver<KeyPress>> {
     let (keydown_sender, keyevent_receiver) = unbounded();
     let keydown_sender = Rc::new(RefCell::new(keydown_sender));
     let keyup_sender = Rc::clone(&keydown_sender);
@@ -21,13 +20,15 @@ pub fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
     let onkeydown = browser::closure_wrap(Box::new(move |keycode: web_sys::KeyboardEvent| {
         keydown_sender
             .borrow_mut()
-            .start_send(KeyPress::KeyDown(keycode));
+            .start_send(KeyPress::KeyDown(keycode))
+            .expect("Failed to start KeyDown send");
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
 
     let onkeyup = browser::closure_wrap(Box::new(move |keycode: web_sys::KeyboardEvent| {
         keyup_sender
             .borrow_mut()
-            .start_send(KeyPress::KeyUp(keycode));
+            .start_send(KeyPress::KeyUp(keycode))
+            .expect("Failed to start KeyPPresssresss send");
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
 
     browser::canvas()
@@ -42,39 +43,40 @@ pub fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
     Ok(keyevent_receiver)
 }
 
-pub struct KeyState {
-    presed_keys: HashMap<String, web_sys::KeyboardEvent>,
+pub enum Event {
+    KeyUp(String),
+    KeyDown(String),
 }
 
-impl KeyState {
-    pub fn new() -> Self {
-        KeyState {
-            presed_keys: HashMap::new(),
+impl From<KeyPress> for Event {
+    fn from(value: KeyPress) -> Self {
+        match value {
+            KeyPress::KeyUp(evt) => Event::KeyUp(evt.code()),
+            KeyPress::KeyDown(evt) => Event::KeyDown(evt.code()),
         }
     }
+}
 
-    pub fn is_pressed(&self, code: &str) -> bool {
-        self.presed_keys.contains_key(code)
-    }
+pub trait EventSource {
+    fn try_next(&mut self) -> Option<Event>;
+}
 
-    pub fn set_pressed(&mut self, code: &str, event: web_sys::KeyboardEvent) {
-        self.presed_keys.insert(code.into(), event);
-    }
+pub struct BrowserEventSource {
+    keyevent_receiver: UnboundedReceiver<KeyPress>,
+}
 
-    pub fn set_released(&mut self, code: &str) {
-        self.presed_keys.remove(code.into());
+impl BrowserEventSource {
+    pub fn new() -> Result<Self> {
+        let keyevent_receiver = prepare_key_input()?;
+        Ok(Self { keyevent_receiver })
     }
 }
 
-pub fn process_input(state: &mut KeyState, keyevent_receiver: &mut UnboundedReceiver<KeyPress>) {
-    loop {
-        match keyevent_receiver.try_next() {
-            Ok(None) => break,
-            Err(_err) => break,
-            Ok(Some(evt)) => match evt {
-                KeyPress::KeyUp(evt) => state.set_released(&evt.code()),
-                KeyPress::KeyDown(evt) => state.set_pressed(&evt.code(), evt),
-            },
+impl EventSource for BrowserEventSource {
+    fn try_next(&mut self) -> Option<Event> {
+        match self.keyevent_receiver.try_next() {
+            Ok(Some(evt)) => Some(evt.into()),
+            _ => None,
         }
     }
 }

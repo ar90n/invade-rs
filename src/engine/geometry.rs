@@ -4,37 +4,32 @@ pub struct Point {
     pub y: i16,
 }
 
-impl Point {
-    pub fn new(x: i16, y: i16) -> Self {
-        Self { x, y }
-    }
-}
-
-#[derive(Default)]
-pub struct Rect {
-    pub origin: Point,
+#[derive(Clone, Copy, Default)]
+pub struct Shape {
     pub width: i16,
     pub height: i16,
 }
 
+#[derive(Default)]
+pub struct Rect {
+    origin: Point,
+    shape: Shape,
+}
+
 impl Rect {
-    pub const fn new(origin: Point, width: i16, height: i16) -> Self {
-        Rect {
-            origin,
-            width,
-            height,
-        }
+    pub const fn new(origin: Point, shape: Shape) -> Self {
+        Rect { origin, shape }
     }
 
-    pub const fn new_from_x_y(x: i16, y: i16, width: i16, height: i16) -> Self {
-        Rect::new(Point { x, y }, width, height)
+    pub const fn new_from_x_y_w_h(x: i16, y: i16, width: i16, height: i16) -> Self {
+        Rect::new(Point { x, y }, Shape { width, height })
     }
 
     pub fn intersects(&self, rect: &Rect) -> bool {
-        (self.x() < (rect.x() + rect.width))
-            && (rect.x() < (self.x() + self.width))
-            && (self.y() < (rect.y() + rect.height))
-            && (rect.y() < (self.y() + self.height))
+        (self.x() < (rect.right()))
+            && (rect.x() < (self.right()))
+            && (self.y() < (rect.bottom()))
+            && (rect.y() < (self.bottom()))
     }
 
     pub fn x(&self) -> i16 {
@@ -45,11 +40,12 @@ impl Rect {
         self.origin.y
     }
 
-    pub fn set_x(&mut self, x: i16) {
-        self.origin.x = x
+    pub fn width(&self) -> i16 {
+        self.shape.width
     }
-    pub fn set_y(&mut self, y: i16) {
-        self.origin.y = y
+
+    pub fn height(&self) -> i16 {
+        self.shape.height
     }
 
     pub fn left(&self) -> i16 {
@@ -61,10 +57,17 @@ impl Rect {
     }
 
     pub fn right(&self) -> i16 {
-        self.origin.x + self.width
+        self.x() + self.width()
     }
 
     pub fn bottom(&self) -> i16 {
-        self.origin.y + self.height
+        self.y() + self.height()
+    }
+
+    pub fn set_x(&mut self, x: i16) {
+        self.origin.x = x
+    }
+    pub fn set_y(&mut self, y: i16) {
+        self.origin.y = y
     }
 }

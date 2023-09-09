@@ -1,9 +1,10 @@
-use wasm_bindgen::prelude::*;
-use web_sys::console;
-
 #[macro_use]
 mod engine;
 mod invade_rs;
+
+use wasm_bindgen::prelude::*;
+
+use crate::engine::{event, renderer, GameLoop};
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
@@ -22,11 +23,11 @@ pub fn main_js() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
 
     engine::browser::spawn_local(async move {
-        // Your code goes here!
-        console::log_1(&JsValue::from_str("Hello world!"));
-
         let game = invade_rs::InvadeRs::new();
-        engine::GameLoop::start(game)
+        let renderer = renderer::CanvasRenderer::new().expect("Could not create renderer");
+        let event_source = event::BrowserEventSource::new().expect("Could not create event source");
+
+        GameLoop::start(game, renderer, event_source)
             .await
             .expect("Could not start game loop");
     });

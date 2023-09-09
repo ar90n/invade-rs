@@ -4,17 +4,14 @@ use js_sys::ArrayBuffer;
 use std::future::Future;
 use web_sys::HtmlImageElement;
 
-use wasm_bindgen::closure::WasmClosure;
-use wasm_bindgen::closure::WasmClosureFnOnce;
+use wasm_bindgen::closure::{WasmClosure, WasmClosureFnOnce};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::CanvasRenderingContext2d;
-use web_sys::Response;
-use web_sys::{Document, HtmlCanvasElement, Window};
+use web_sys::{console, CanvasRenderingContext2d, Document, HtmlCanvasElement, Response, Window};
 
 pub type LoopClosure = Closure<dyn FnMut(f64)>;
 
-pub fn window() -> Result<Window> {
+fn window() -> Result<Window> {
     web_sys::window().ok_or_else(|| anyhow!("No Window Found"))
 }
 
@@ -115,4 +112,8 @@ pub fn now() -> Result<f64> {
         .performance()
         .ok_or_else(|| anyhow!("Performance object not found"))?
         .now())
+}
+
+pub fn log(msg: &str) {
+    console::log_1(&JsValue::from_str(msg));
 }
