@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Frame {
     cell_name: String,
     duration: f32,
@@ -12,6 +13,7 @@ impl Frame {
     }
 }
 
+#[derive(Clone)]
 pub struct Sequence {
     frames: Vec<Frame>,
     acc_time: f32,

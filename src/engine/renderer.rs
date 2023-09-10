@@ -1,4 +1,5 @@
 use anyhow::Result;
+use wasm_bindgen::JsValue;
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
 use super::browser;
@@ -23,12 +24,14 @@ impl CanvasRenderer {
 
 impl Renderer for CanvasRenderer {
     fn clear(&self, rect: &Rect) {
-        self.context.clear_rect(
+        self.context.rect(
             rect.x().into(),
             rect.y().into(),
             rect.width().into(),
             rect.height().into(),
-        )
+        );
+        self.context.set_fill_style(&JsValue::from_str("black"));
+        self.context.fill();
     }
 
     fn draw_image(&self, image: &HtmlImageElement, source: &Rect, destination: &Rect) {

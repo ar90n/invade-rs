@@ -5,31 +5,15 @@ use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::SpriteSheet;
 use crate::engine::{Character, DrawCommand};
 
-#[derive(Clone, Copy)]
-pub enum FerrisColor {
-    Blue,
-    Green,
-    Magenta,
-}
-
-impl Into<&str> for FerrisColor {
-    fn into(self) -> &'static str {
-        match self {
-            FerrisColor::Blue => "blue",
-            FerrisColor::Green => "green",
-            FerrisColor::Magenta => "magenta",
-        }
-    }
-}
 
 #[derive(Clone)]
-pub struct Ferris {
+pub struct TurboFish {
     position: Point,
     sprite_sheet: Rc<SpriteSheet>,
     animation: Sequence,
 }
 
-impl Ferris {
+impl TurboFish {
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
         let cell = sprite_sheet
             .cell("ferris_blue_0.png")
@@ -37,8 +21,8 @@ impl Ferris {
         cell.shape()
     }
 
-    pub fn new(sprite_sheet: Rc<SpriteSheet>, position: Point, color: FerrisColor) -> Self {
-        let animation = Self::new_animation(color);
+    pub fn new(sprite_sheet: Rc<SpriteSheet>, position: Point) -> Self {
+        let animation = Self::new_animation();
 
         Self {
             position,
@@ -47,20 +31,19 @@ impl Ferris {
         }
     }
 
-    fn new_animation(color: FerrisColor) -> Sequence {
-        const FERRIS_ANIMATION_FRAMES: usize = 4;
+    fn new_animation() -> Sequence {
+        const TURBO_FISH_ANIMATION_FRAMES: usize = 2;
 
-        let frames = (0..=FERRIS_ANIMATION_FRAMES).into_iter().map(|i| {
-            let color_str: &str = color.into();
-            let cell_name = format!("ferris_{}_{}.png", color_str, i);
-            let duration = 150.0;
+        let frames = (0..TURBO_FISH_ANIMATION_FRAMES).into_iter().map(|i| {
+            let cell_name = format!("turbo_fish_yellow_{}.png", i);
+            let duration = 100.0;
             Frame::new(cell_name, duration)
         });
         Sequence::new(frames.collect())
     }
 }
 
-impl Character for Ferris {
+impl Character for TurboFish {
     fn update(&mut self, delta: f32) {
         self.animation.update(delta);
     }

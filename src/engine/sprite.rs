@@ -66,7 +66,7 @@ impl SpriteSheet {
         self.sheet.frames.get(name)
     }
 
-    pub fn draw(&self, renderer: &impl Renderer, cell: &Cell, destination: &Point) {
+    pub fn draw(&self, renderer: &dyn Renderer, cell: &Cell, destination: &Point) {
         let source: Rect = cell.clone().frame.into();
         let destination = Rect::new(destination.clone(), cell.shape());
 

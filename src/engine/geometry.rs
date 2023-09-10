@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct Point {
     pub x: i16,
     pub y: i16,
