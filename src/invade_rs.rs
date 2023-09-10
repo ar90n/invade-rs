@@ -216,9 +216,10 @@ impl InvadeRs {
         //        let background_music = audio.load_sound("background_song.mp3").await?;
     }
 
-    fn create_ferris_fleet(
+    fn spawn_ferris_fleet(
         &self,
         sprite_sheet: &Rc<SpriteSheet>,
+        screen_width: i16
     ) -> Vec<Rc<RefCell<Box<dyn Character>>>> {
         const FLEET_COLS: i16 = 9;
         const FLEET_ROWS: i16 = 2 * 3;
@@ -226,6 +227,7 @@ impl InvadeRs {
         const MARGIN: i16 = 10;
 
         let ferris_shape = Ferris::get_shape(sprite_sheet);
+        let x_origin = (screen_width - FLEET_COLS * (ferris_shape.width + MARGIN)) / 2;
         let colors = vec![FerrisColor::Magenta, FerrisColor::Green, FerrisColor::Blue];
 
         let mut characters = vec![];
@@ -233,7 +235,7 @@ impl InvadeRs {
             let color = colors[(row / 2) as usize];
             let y = Y_ORIGIN + row * (ferris_shape.height + MARGIN);
             for col in 0..FLEET_COLS {
-                let x = MARGIN + col * (ferris_shape.width + MARGIN);
+                let x = x_origin + (MARGIN / 2) + col * (ferris_shape.width + MARGIN);
                 let position = Point { x, y };
                 let ferris = Ferris::new(sprite_sheet.clone(), position, color);
                 characters.push(Rc::new(
@@ -245,7 +247,7 @@ impl InvadeRs {
         characters
     }
 
-    fn create_aligned_shields(
+    fn spawn_aligned_shields(
         &self,
         sprite_sheet: &Rc<SpriteSheet>,
         screen_width: i16,
@@ -267,7 +269,7 @@ impl InvadeRs {
         characters
     }
 
-    fn create_ship(
+    fn spawn_ship(
         &self,
         sprite_sheet: &Rc<SpriteSheet>,
         screen_width: i16,
@@ -285,7 +287,7 @@ impl InvadeRs {
         Rc::new(RefCell::new(Box::new(ship) as Box<dyn Character>))
     }
 
-    fn create_turbo_fish(&self, sprite_sheet: &Rc<SpriteSheet>) -> Rc<RefCell<Box<dyn Character>>> {
+    fn spawn_turbo_fish(&self, sprite_sheet: &Rc<SpriteSheet>) -> Rc<RefCell<Box<dyn Character>>> {
         const Y_ORIGIN: i16 = 50;
 
         let ship_shape = turbo_fish::TurboFish::get_shape(sprite_sheet);
@@ -313,10 +315,10 @@ impl Game for InvadeRs {
         let sprite_sheet = self.load_sprite_sheet().await?;
         let characters = {
             let mut characters = vec![];
-            characters.append(&mut self.create_ferris_fleet(&sprite_sheet));
-            characters.append(&mut self.create_aligned_shields(&sprite_sheet, 600));
-            characters.push(self.create_ship(&sprite_sheet, 600));
-            characters.push(self.create_turbo_fish(&sprite_sheet));
+            characters.append(&mut self.spawn_ferris_fleet(&sprite_sheet, 600));
+            characters.append(&mut self.spawn_aligned_shields(&sprite_sheet, 600));
+            characters.push(self.spawn_ship(&sprite_sheet, 600));
+            characters.push(self.spawn_turbo_fish(&sprite_sheet));
             characters
         };
 
