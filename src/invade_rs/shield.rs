@@ -4,7 +4,9 @@ use std::rc::Rc;
 use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::{Cell, SpriteSheet};
-use crate::engine::{Character, DrawCommand};
+use crate::engine::DrawCommand;
+
+use super::character::{Character, GameCommand, Id};
 
 #[derive(Clone, Copy)]
 enum ShieldType {
@@ -15,6 +17,7 @@ enum ShieldType {
 
 #[derive(Clone)]
 pub struct ShieldElement {
+    id: Id,
     position: Point,
     sprite_sheet: Rc<SpriteSheet>,
     cell: Cell,
@@ -40,6 +43,7 @@ impl ShieldElement {
             .clone();
 
         Self {
+            id: Id::new(),
             position,
             sprite_sheet,
             cell,
@@ -48,26 +52,33 @@ impl ShieldElement {
 }
 
 impl Character for ShieldElement {
-    fn update(&mut self, delta: f32) {}
+    fn id(&self) -> &Id {
+        &self.id
+    }
 
-    fn draw(&self) -> DrawCommand {
+    fn bounding_box(&self) -> Rect {
+        Rect::new(self.position.clone(), self.cell.shape())
+    }
+
+    fn update(&mut self, delta: f32) -> Option<GameCommand> {
+        None
+    }
+
+    fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
         let position = self.position.clone();
 
-        DrawCommand(
+        Some(DrawCommand(
             1,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
-        )
+        ))
     }
 }
 
-pub fn create_shield(
-    sprite_sheet: Rc<SpriteSheet>,
-    position: &Point,
-) -> Vec<Rc<RefCell<Box<dyn Character>>>> {
+pub fn create_shield(sprite_sheet: Rc<SpriteSheet>, position: &Point) -> Vec<ShieldElement> {
     const SHIELD_COLS: i16 = 4;
     const SHIELD_ROWS: i16 = 3;
 
@@ -87,11 +98,11 @@ pub fn create_shield(
                 (0, x) if x == (SHIELD_COLS - 1) => ShieldType::Right,
                 _ => ShieldType::Middle,
             };
-            elements.push(Rc::new(RefCell::new(Box::new(ShieldElement::new(
+            elements.push(ShieldElement::new(
                 sprite_sheet.clone(),
                 position,
                 shield_type,
-            )) as Box<dyn Character>)));
+            ));
         }
     }
 

@@ -21,11 +21,6 @@ type SharedLoopClosure = Rc<RefCell<Option<browser::LoopClosure>>>;
 
 pub struct DrawCommand(pub i16, pub Box<dyn Fn(&dyn Renderer)>);
 
-pub trait Character {
-    fn update(&mut self, delta: f32);
-    fn draw(&self) -> DrawCommand;
-}
-
 #[async_trait(?Send)]
 pub trait Game {
     async fn initialize(&mut self) -> Result<()>;

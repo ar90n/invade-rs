@@ -1,13 +1,15 @@
 use std::rc::Rc;
 
-use crate::engine::geometry::{Point, Shape};
+use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::SpriteSheet;
-use crate::engine::{Character, DrawCommand};
+use crate::engine::{browser, DrawCommand};
 
+use super::character::{Character, GameCommand, Id};
 
 #[derive(Clone)]
 pub struct TurboFish {
+    id: Id,
     position: Point,
     sprite_sheet: Rc<SpriteSheet>,
     animation: Sequence,
@@ -25,6 +27,7 @@ impl TurboFish {
         let animation = Self::new_animation();
 
         Self {
+            id: Id::new(),
             position,
             sprite_sheet,
             animation,
@@ -44,11 +47,23 @@ impl TurboFish {
 }
 
 impl Character for TurboFish {
-    fn update(&mut self, delta: f32) {
-        self.animation.update(delta);
+    fn id(&self) -> &Id {
+        &self.id
+    }
+    fn bounding_box(&self) -> Rect {
+        Rect::new(self.position.clone(), Self::get_shape(&self.sprite_sheet))
     }
 
-    fn draw(&self) -> DrawCommand {
+    fn update(&mut self, delta: f32) -> Option<GameCommand> {
+        const VELOCITY: i16 = 3;
+
+        self.animation.update(delta);
+        self.position.x += VELOCITY;
+
+        None
+    }
+
+    fn draw(&self) -> Option<DrawCommand> {
         let cell = self
             .sprite_sheet
             .cell(self.animation.current_frame_cell_name())
@@ -57,11 +72,11 @@ impl Character for TurboFish {
         let sprite_sheet = self.sprite_sheet.clone();
         let position = self.position.clone();
 
-        DrawCommand(
+        Some(DrawCommand(
             1,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
-        )
+        ))
     }
 }
