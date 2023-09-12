@@ -4,7 +4,7 @@ use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::{DrawCommand, Game};
 
-use super::character::{Character, GameCommand, Id, layers};
+use super::character::{layers, GameCommand, GameCharacter, Id};
 use super::missile::Missile;
 
 #[derive(Clone)]
@@ -18,7 +18,7 @@ pub struct Ship {
 }
 
 impl Ship {
-    const DEFAULT_VELOCITY: f32 = 90.0/ 1000.0;
+    const DEFAULT_VELOCITY: f32 = 90.0 / 1000.0;
 
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
         let cell = sprite_sheet
@@ -68,17 +68,15 @@ impl Ship {
             y: self.position.y,
         }
     }
-}
-
-impl Character for Ship {
-    fn id(&self) -> &Id {
+    
+    pub fn id(&self) -> &Id {
         &self.id
     }
-    fn bounding_box(&self) -> Rect {
+    pub fn bounding_box(&self) -> Rect {
         Rect::new(self.position.clone(), self.cell.shape())
     }
 
-    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+    pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
         self.position.x += (self.velocity * delta_ms).round() as i16;
 
         if !self.need_shot {
@@ -87,10 +85,10 @@ impl Character for Ship {
 
         self.need_shot = false;
         let missile = Missile::new(self.sprite_sheet.clone(), self.get_missile_spawn_point());
-        Some(GameCommand::SpawnCharacter(Box::new(missile)))
+        Some(GameCommand::SpawnCharacter(missile.into()))
     }
 
-    fn draw(&self) -> Option<DrawCommand> {
+    pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
         let position = self.position.clone();
@@ -101,5 +99,18 @@ impl Character for Ship {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
         ))
+    }
+
+    pub fn on_exit_screen(&mut self) -> Option<GameCommand> {
+        Some(GameCommand::DestroyCharacter(self.id().clone()))
+    }
+
+    pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
+        match other {
+            GameCharacter::Beam(_) => {
+                Some(GameCommand::DestroyPlayer)
+            }
+            _ => None,
+        }
     }
 }

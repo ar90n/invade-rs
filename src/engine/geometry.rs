@@ -10,7 +10,7 @@ pub struct Shape {
     pub height: i16,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Rect {
     origin: Point,
     shape: Shape,

@@ -3,7 +3,6 @@ pub mod event;
 pub mod geometry;
 pub mod renderer;
 pub mod sequence;
-pub mod sound;
 pub mod sprite;
 pub mod ui;
 

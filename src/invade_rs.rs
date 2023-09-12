@@ -11,7 +11,7 @@ use crate::engine::sprite::SpriteSheet;
 use crate::engine::{browser, event, sprite};
 use crate::engine::{DrawCommand, Game};
 
-use self::character::{Character, GameCommand, Id};
+use self::character::{GameCharacter, GameCommand, Id};
 use self::ferris::{Ferris, FerrisColor};
 use self::fsm::{State, StateMachine, StateMachineRunner};
 use self::shield::ShieldElement;
@@ -25,14 +25,14 @@ mod missile;
 mod shield;
 mod ship;
 mod turbo_fish;
+mod wall;
 
 const SCREEN_RECT: Rect = Rect::new_from_x_y_w_h(0, 0, 600, 600);
 
 #[derive(Clone)]
 struct Created {}
 
-#[async_trait(?Send)]
-impl State<GameStateMachine> for Created {
+impl State<Event, GameStateMachine> for Created {
     fn update(&self, delta: f32, _events: &[Event]) -> GameStateMachine {
         GameStateMachine::Created(self.clone())
     }
@@ -57,13 +57,13 @@ impl Into<GameStateMachine> for Created {
 #[derive(Clone)]
 struct OutGame {
     sprite_sheet: Rc<sprite::SpriteSheet>,
-    characters: Vec<Rc<RefCell<Box<dyn Character>>>>,
+    characters: Vec<Rc<RefCell<GameCharacter>>>,
 }
 
 impl OutGame {
     fn new(
         sprite_sheet: Rc<sprite::SpriteSheet>,
-        characters: Vec<Rc<RefCell<Box<dyn Character>>>>,
+        characters: Vec<Rc<RefCell<GameCharacter>>>,
     ) -> Self {
         Self {
             sprite_sheet,
@@ -72,8 +72,7 @@ impl OutGame {
     }
 }
 
-#[async_trait(?Send)]
-impl State<GameStateMachine> for OutGame {
+impl State<Event, GameStateMachine> for OutGame {
     fn update(&self, delta: f32, events: &[Event]) -> GameStateMachine {
         GameStateMachine::OutGame(self.clone())
     }
@@ -98,7 +97,7 @@ impl Into<GameStateMachine> for OutGame {
 #[derive(Clone)]
 struct InGame {
     sprite_sheet: Rc<sprite::SpriteSheet>,
-    characters: Vec<Rc<RefCell<Box<dyn Character>>>>,
+    characters: Vec<Rc<RefCell<GameCharacter>>>,
     player: Rc<RefCell<Ship>>,
 }
 
@@ -139,6 +138,22 @@ impl InGame {
             }
         }
 
+        for c in self.characters.iter() {
+            let c = c.borrow();
+            for other in self.characters.iter() {
+                let other = other.borrow();
+                if c.id() == other.id() {
+                    continue;
+                }
+
+                if c.bounding_box().intersects(&other.bounding_box()) {
+                    if let Some(command) = c.on_collide(&other) {
+                        commands.push(command);
+                    }
+                }
+            }
+        }
+
         if let Some(command) = self.player.borrow_mut().update(delta) {
             commands.push(command);
         }
@@ -157,13 +172,21 @@ impl InGame {
             GameCommand::DestroyCharacter(id) => {
                 self.characters.retain(|c| c.borrow().id() != &id);
             }
+            GameCommand::TurnFerris => {
+                for c in self.characters.iter() {
+                    let mut c = c.borrow_mut();
+                    if let GameCharacter::Ferris(ferris) = &mut *c {
+                        ferris.turn();
+                    }
+                }
+            }
             _ => {}
         }
     }
 
     fn new(
         sprite_sheet: Rc<sprite::SpriteSheet>,
-        characters: Vec<Rc<RefCell<Box<dyn Character>>>>,
+        characters: Vec<Rc<RefCell<GameCharacter>>>,
         player: Rc<RefCell<Ship>>,
     ) -> Self {
         Self {
@@ -184,12 +207,11 @@ impl InGame {
             y: Y_ORIGIN,
         };
         let turbo_fish = turbo_fish::TurboFish::new(sprite_sheet.clone(), position);
-        GameCommand::SpawnCharacter(Box::new(turbo_fish))
+        GameCommand::SpawnCharacter(turbo_fish.into())
     }
 }
 
-#[async_trait(?Send)]
-impl State<GameStateMachine> for InGame {
+impl State<Event, GameStateMachine> for InGame {
     fn update(&self, delta: f32, events: &[Event]) -> GameStateMachine {
         events.iter().for_each(|event| self.apply_event(event));
 
@@ -247,8 +269,7 @@ impl GameStateMachine {
     }
 }
 
-#[async_trait(?Send)]
-impl StateMachine for GameStateMachine {
+impl StateMachine<Event> for GameStateMachine {
     fn update(&self, delta: f32, events: &[Event]) -> Self {
         match self {
             Self::Created(state) => state.update(delta, events),
@@ -292,7 +313,7 @@ impl PartialEq for GameStateMachine {
 }
 
 pub struct InvadeRs {
-    runner: StateMachineRunner<GameStateMachine>,
+    runner: StateMachineRunner<Event, GameStateMachine>,
 }
 
 impl InvadeRs {
@@ -308,18 +329,11 @@ impl InvadeRs {
             .map(|sprite_sheet| Rc::new(sprite_sheet))
     }
 
-    async fn load_audio(&mut self) -> Result<()> {
-        todo!()
-        //        let audio = Audio::new()?;
-        //        let sound = audio.load_sound("SFX_Jump_23.mp3").await?;
-        //        let background_music = audio.load_sound("background_song.mp3").await?;
-    }
-
     fn spawn_ferris_fleet(
         &self,
         sprite_sheet: &Rc<SpriteSheet>,
         screen_width: i16,
-    ) -> Vec<Rc<RefCell<Box<dyn Character>>>> {
+    ) -> Vec<Rc<RefCell<GameCharacter>>> {
         const FLEET_COLS: i16 = 9;
         const FLEET_ROWS: i16 = 2 * 3;
         const Y_ORIGIN: i16 = 100;
@@ -337,9 +351,7 @@ impl InvadeRs {
                 let x = x_origin + (MARGIN / 2) + col * (ferris_shape.width + MARGIN);
                 let position = Point { x, y };
                 let ferris = Ferris::new(sprite_sheet.clone(), position, color);
-                characters.push(Rc::new(
-                    RefCell::new(Box::new(ferris) as Box<dyn Character>),
-                ));
+                characters.push(Rc::new(RefCell::new(ferris.into())));
             }
         }
 
@@ -350,7 +362,7 @@ impl InvadeRs {
         &self,
         sprite_sheet: &Rc<SpriteSheet>,
         screen_width: i16,
-    ) -> Vec<Rc<RefCell<Box<dyn Character>>>> {
+    ) -> Vec<Rc<RefCell<GameCharacter>>> {
         const SHIELD_NUM: i16 = 4;
         const Y_ORIGIN: i16 = 490;
 
@@ -364,9 +376,7 @@ impl InvadeRs {
             let position = Point { x, y: Y_ORIGIN };
             shield::create_shield(sprite_sheet.clone(), &position)
                 .into_iter()
-                .for_each(|c| {
-                    characters.push(Rc::new(RefCell::new(Box::new(c) as Box<dyn Character>)))
-                });
+                .for_each(|c| characters.push(Rc::new(RefCell::new(c.into()))));
         }
 
         characters
@@ -385,6 +395,26 @@ impl InvadeRs {
         let ship = ship::Ship::new(sprite_sheet.clone(), position);
         Rc::new(RefCell::new(ship.into()))
     }
+
+    fn spawn_walls(
+        &self,
+        screen_width: i16,
+        screen_height: i16,
+    ) -> Vec<Rc<RefCell<GameCharacter>>> {
+        let left_wall = wall::Wall::new(
+            wall::WallType::Left,
+            Rect::new_from_x_y_w_h(0, 0, 1, screen_height),
+        );
+        let right_wall = wall::Wall::new(
+            wall::WallType::Right,
+            Rect::new_from_x_y_w_h(screen_width - 1, 0, 1, screen_height),
+        );
+
+        vec![
+            Rc::new(RefCell::new(left_wall.into())),
+            Rc::new(RefCell::new(right_wall.into())),
+        ]
+    }
 }
 
 impl Default for InvadeRs {
@@ -401,6 +431,7 @@ impl Game for InvadeRs {
             let mut characters = vec![];
             characters.append(&mut self.spawn_ferris_fleet(&sprite_sheet, SCREEN_RECT.width()));
             characters.append(&mut self.spawn_aligned_shields(&sprite_sheet, SCREEN_RECT.width()));
+            characters.append(&mut self.spawn_walls(SCREEN_RECT.width(), SCREEN_RECT.height()));
             characters
         };
         let player = self.spawn_ship(&sprite_sheet, SCREEN_RECT.width());
@@ -408,38 +439,6 @@ impl Game for InvadeRs {
         self.runner
             //.transition(OutGame::new(sprite_sheet, characters).into())?;
             .transition(InGame::new(sprite_sheet, characters, player).into())?;
-
-        //        audio.play_looping_sound(&background_music)?;
-        //        let rhb = RedHatBoy::new(
-        //            sheet.into_serde::<Sheet>()?,
-        //            engine::load_image("rhb.png").await?,
-        //            audio,
-        //            sound,
-        //        );
-
-        //        let background_width = background.width() as i16;
-        //        let starting_obstacles = stone_and_platform(stone.clone(), sprite_sheet.clone(), 0);
-        //        let timeline = rightmost(&starting_obstacles);
-        //        let machine = WalkTheDogStateMachine::Ready(WalkTheDogState {
-        //            _state: Read,
-        //            walk: Walk {
-        //                boy: rhb,
-        //                backgrounds: [
-        //                    Image::new(background.clone(), Point { x: 0, y: 0 }),
-        //                    Image::new(
-        //                        background,
-        //                        Point {
-        //                            x: background_width,
-        //                            y: 0,
-        //                        },
-        //                    ),
-        //                ],
-        //                obstacles: starting_obstacles,
-        //                obstacle_sheet: sprite_sheet,
-        //                stone,
-        //                timeline,
-        //            },
-        //        });
         Ok(())
     }
 

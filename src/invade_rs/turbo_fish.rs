@@ -5,7 +5,7 @@ use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::SpriteSheet;
 use crate::engine::{browser, DrawCommand};
 
-use super::character::{Character, GameCommand, Id, layers};
+use super::character::{layers, GameCommand, GameCharacter, Id};
 
 #[derive(Clone)]
 pub struct TurboFish {
@@ -46,24 +46,22 @@ impl TurboFish {
         });
         Sequence::new(frames.collect())
     }
-}
 
-impl Character for TurboFish {
-    fn id(&self) -> &Id {
+    pub fn id(&self) -> &Id {
         &self.id
     }
-    fn bounding_box(&self) -> Rect {
+    pub fn bounding_box(&self) -> Rect {
         Rect::new(self.position.clone(), Self::get_shape(&self.sprite_sheet))
     }
 
-    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+    pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
         self.animation.update(delta_ms);
         self.position.x += (Self::DEFAULT_VELOCITY * delta_ms).round() as i16;
 
         None
     }
 
-    fn draw(&self) -> Option<DrawCommand> {
+    pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self
             .sprite_sheet
             .cell(self.animation.current_frame_cell_name())
@@ -78,5 +76,18 @@ impl Character for TurboFish {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
         ))
+    }
+
+    pub fn on_exit_screen(&mut self) -> Option<GameCommand> {
+        Some(GameCommand::DestroyCharacter(self.id().clone()))
+    }
+
+    pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
+        match other {
+            GameCharacter::Missile(_) => {
+                Some(GameCommand::DestroyCharacter(self.id().clone()))
+            }
+            _ => None,
+        }
     }
 }

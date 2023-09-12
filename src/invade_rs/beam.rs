@@ -5,7 +5,7 @@ use crate::engine::geometry::{Point, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::{DrawCommand, Game};
 
-use super::character::{Character, GameCommand, Id, layers};
+use super::character::{layers, GameCommand, Id, GameCharacter};
 
 pub enum BeamColor {
     Blue,
@@ -62,26 +62,24 @@ impl Beam {
         let cell_name = format!("beam_{}_0.png", color_str);
         cell_name
     }
-}
 
-impl Character for Beam {
-    fn id(&self) -> &Id {
+    pub fn id(&self) -> &Id {
         &self.id
     }
 
-    fn bounding_box(&self) -> Rect {
+    pub fn bounding_box(&self) -> Rect {
         let shape = self.cell.shape();
         let position = self.position.clone();
         Rect::new(position, shape)
     }
 
-    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+    pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
         self.position.y += (self.velocity * delta_ms).round() as i16;
 
         None
     }
 
-    fn draw(&self) -> Option<DrawCommand> {
+    pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
         let position = self.position.clone();
@@ -92,5 +90,18 @@ impl Character for Beam {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
         ))
+    }
+
+    pub fn on_exit_screen(&mut self) -> Option<GameCommand> {
+        Some(GameCommand::DestroyCharacter(self.id().clone()))
+    }
+
+    pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
+        match other {
+            GameCharacter::ShieldElement(_) | GameCharacter::Ship(_) => {
+                Some(GameCommand::DestroyCharacter(self.id().clone()))
+            }
+            _ => None,
+        }
     }
 }

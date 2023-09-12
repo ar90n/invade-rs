@@ -1,34 +1,33 @@
+use std::marker::PhantomData;
+
 use anyhow::Result;
-use async_trait::async_trait;
 
-use super::event::Event;
-
-#[async_trait(?Send)]
-pub trait State<SM: StateMachine> {
-    fn update(&self, delta: f32, events: &[Event]) -> SM;
+pub trait State<E, SM: StateMachine<E>> {
+    fn update(&self, delta: f32, events: &[E]) -> SM;
     fn on_enter(&mut self) -> Result<()>;
     fn on_exit(&mut self) -> Result<()>;
 }
 
-#[async_trait(?Send)]
-pub trait StateMachine {
-    fn update(&self, delta: f32, events: &[Event]) -> Self;
+pub trait StateMachine<E> {
+    fn update(&self, delta: f32, events: &[E]) -> Self;
     fn on_enter(&mut self) -> Result<()>;
     fn on_exit(&mut self) -> Result<()>;
 }
 
-pub struct StateMachineRunner<S: StateMachine + Default + PartialEq> {
+pub struct StateMachineRunner<E, S: StateMachine<E> + Default + PartialEq> {
     pub state: S,
+    phantom: PhantomData<E>
 }
 
-impl<S: StateMachine + Default + PartialEq> StateMachineRunner<S> {
+impl<E, S: StateMachine<E> + Default + PartialEq> StateMachineRunner<E, S> {
     pub fn new() -> Self {
         Self {
             state: S::default(),
+            phantom: PhantomData,
         }
     }
 
-    pub fn update(&mut self, delta: f32, events: &[Event]) -> Result<()> {
+    pub fn update(&mut self, delta: f32, events: &[E]) -> Result<()> {
         let mut next_state = self.state.update(delta, events);
         self.transition(next_state)
     }

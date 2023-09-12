@@ -6,7 +6,7 @@ use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::DrawCommand;
 
-use super::character::{Character, GameCommand, Id, layers};
+use super::character::{layers, GameCommand, GameCharacter, Id};
 
 #[derive(Clone, Copy)]
 enum ShieldType {
@@ -49,22 +49,19 @@ impl ShieldElement {
             cell,
         }
     }
-}
-
-impl Character for ShieldElement {
-    fn id(&self) -> &Id {
+    pub fn id(&self) -> &Id {
         &self.id
     }
 
-    fn bounding_box(&self) -> Rect {
+    pub fn bounding_box(&self) -> Rect {
         Rect::new(self.position.clone(), self.cell.shape())
     }
 
-    fn update(&mut self, delta: f32) -> Option<GameCommand> {
+    pub fn update(&mut self, delta: f32) -> Option<GameCommand> {
         None
     }
 
-    fn draw(&self) -> Option<DrawCommand> {
+    pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
         let position = self.position.clone();
@@ -75,6 +72,19 @@ impl Character for ShieldElement {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
         ))
+    }
+
+    pub fn on_exit_screen(&mut self) -> Option<GameCommand> {
+        Some(GameCommand::DestroyCharacter(self.id().clone()))
+    }
+
+    pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
+        match other {
+            GameCharacter::Beam(_) | GameCharacter::Ferris(_) => {
+                Some(GameCommand::DestroyCharacter(self.id().clone()))
+            }
+            _ => None,
+        }
     }
 }
 

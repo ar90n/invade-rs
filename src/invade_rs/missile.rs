@@ -4,7 +4,7 @@ use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::DrawCommand;
 
-use super::character::{Character, GameCommand, Id, layers};
+use super::character::{layers, GameCharacter, GameCommand, Id};
 
 #[derive(Clone)]
 pub struct Missile {
@@ -39,24 +39,21 @@ impl Missile {
             velocity: Self::DEFAULT_VELOCITY,
         }
     }
-}
-
-impl Character for Missile {
-    fn id(&self) -> &Id {
+    pub fn id(&self) -> &Id {
         &self.id
     }
 
-    fn bounding_box(&self) -> Rect {
+    pub fn bounding_box(&self) -> Rect {
         Rect::new(self.position.clone(), self.cell.shape())
     }
 
-    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+    pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
         self.position.y -= (self.velocity * delta_ms).round() as i16;
 
         None
     }
 
-    fn draw(&self) -> Option<DrawCommand> {
+    pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
         let position = self.position.clone();
@@ -67,5 +64,20 @@ impl Character for Missile {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
         ))
+    }
+
+    pub fn on_exit_screen(&mut self) -> Option<GameCommand> {
+        Some(GameCommand::DestroyCharacter(self.id().clone()))
+    }
+
+    pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
+        match other {
+            GameCharacter::Ferris(_)
+            | GameCharacter::TurboFish(_)
+            | GameCharacter::ShieldElement(_) => {
+                Some(GameCommand::DestroyCharacter(self.id().clone()))
+            }
+            _ => None,
+        }
     }
 }
