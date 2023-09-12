@@ -19,15 +19,12 @@ impl Missile {
     const DEFAULT_VELOCITY: f32 = 120.0 / 1000.0;
 
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
-        let cell = sprite_sheet
-            .cell("beam_orange_1.png")
-            .expect("cell not found");
+        let cell = Self::get_cell(&sprite_sheet).expect("cell not found");
         cell.shape()
     }
 
     pub fn new(sprite_sheet: Rc<SpriteSheet>, position: Point) -> Self {
-        let cell = sprite_sheet
-            .cell("beam_orange_1.png")
+        let cell = Self::get_cell(&sprite_sheet)
             .expect("cell not found")
             .clone();
 
@@ -39,6 +36,7 @@ impl Missile {
             velocity: Self::DEFAULT_VELOCITY,
         }
     }
+
     pub fn id(&self) -> &Id {
         &self.id
     }
@@ -79,5 +77,9 @@ impl Missile {
             }
             _ => None,
         }
+    }
+
+    fn get_cell(sprite_sheet: &Rc<SpriteSheet>) -> Option<&Cell> {
+        sprite_sheet.cell("beam_orange_1.png")
     }
 }

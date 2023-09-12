@@ -17,7 +17,6 @@ use self::renderer::Renderer;
 
 type SharedLoopClosure = Rc<RefCell<Option<browser::LoopClosure>>>;
 
-
 pub struct DrawCommand(pub u8, pub Box<dyn Fn(&dyn Renderer)>);
 
 #[async_trait(?Send)]
@@ -50,13 +49,13 @@ impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoo
             Self::new(game, renderer, event_source, last_frame)
         };
 
-        game_loop.initialize().await;
+        game_loop.initialize().await?;
 
         let f: SharedLoopClosure = Rc::new(RefCell::new(None));
         let g = f.clone();
         *g.borrow_mut() = Some(browser::create_raf_closure(move |perf: f64| {
             let events = game_loop.collect_events();
-            game_loop.update(perf, &events);
+            game_loop.update(perf, &events).expect("Failed to update");
             game_loop.render();
 
             browser::request_animation_frame(f.borrow().as_ref().unwrap()).expect("Loop failed");
@@ -70,8 +69,8 @@ impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoo
         Ok(())
     }
 
-    async fn initialize(&mut self) {
-        self.game.initialize().await;
+    async fn initialize(&mut self) -> Result<()> {
+        self.game.initialize().await
     }
 
     fn collect_events(&mut self) -> Vec<Event> {
@@ -82,12 +81,13 @@ impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoo
         events
     }
 
-    fn update(&mut self, perf: f64, events: &[Event]) {
+    fn update(&mut self, perf: f64, events: &[Event]) -> Result<()> {
         let delta = (perf - self.last_frame) as f32;
 
-        self.game.update(delta, &events);
+        self.game.update(delta, &events)?;
 
         self.last_frame = perf;
+        Ok(())
     }
 
     fn render(&self) {

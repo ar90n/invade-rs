@@ -1,12 +1,10 @@
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::engine::geometry::{Point, Rect, Shape};
-use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::DrawCommand;
 
-use super::character::{layers, GameCommand, GameCharacter, Id};
+use super::character::{layers, GameCharacter, GameCommand, Id};
 
 #[derive(Clone, Copy)]
 enum ShieldType {
@@ -57,7 +55,7 @@ impl ShieldElement {
         Rect::new(self.position.clone(), self.cell.shape())
     }
 
-    pub fn update(&mut self, delta: f32) -> Option<GameCommand> {
+    pub fn update(&mut self, _delta_ms: f32) -> Option<GameCommand> {
         None
     }
 

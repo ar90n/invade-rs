@@ -3,9 +3,9 @@ use std::rc::Rc;
 use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::SpriteSheet;
-use crate::engine::{browser, DrawCommand};
+use crate::engine::DrawCommand;
 
-use super::character::{layers, GameCommand, GameCharacter, Id};
+use super::character::{layers, GameCharacter, GameCommand, Id};
 
 #[derive(Clone)]
 pub struct TurboFish {
@@ -84,9 +84,7 @@ impl TurboFish {
 
     pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
         match other {
-            GameCharacter::Missile(_) => {
-                Some(GameCommand::DestroyCharacter(self.id().clone()))
-            }
+            GameCharacter::Missile(_) => Some(GameCommand::DestroyCharacter(self.id().clone())),
             _ => None,
         }
     }

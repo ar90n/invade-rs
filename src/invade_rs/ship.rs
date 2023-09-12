@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
-use crate::engine::{DrawCommand, Game};
+use crate::engine::DrawCommand;
 
-use super::character::{layers, GameCommand, GameCharacter, Id};
+use super::character::{layers, GameCharacter, GameCommand, Id};
 use super::missile::Missile;
 
 #[derive(Clone)]
@@ -21,15 +21,12 @@ impl Ship {
     const DEFAULT_VELOCITY: f32 = 90.0 / 1000.0;
 
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
-        let cell = sprite_sheet
-            .cell("rust_logo_orange.png")
-            .expect("cell not found");
+        let cell = Self::get_cell(sprite_sheet).expect("cell not found");
         cell.shape()
     }
 
     pub fn new(sprite_sheet: Rc<SpriteSheet>, position: Point) -> Self {
-        let cell = sprite_sheet
-            .cell("rust_logo_orange.png")
+        let cell = Self::get_cell(&sprite_sheet)
             .expect("cell not found")
             .clone();
 
@@ -68,7 +65,7 @@ impl Ship {
             y: self.position.y,
         }
     }
-    
+
     pub fn id(&self) -> &Id {
         &self.id
     }
@@ -107,10 +104,12 @@ impl Ship {
 
     pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
         match other {
-            GameCharacter::Beam(_) => {
-                Some(GameCommand::DestroyPlayer)
-            }
+            GameCharacter::Beam(_) => Some(GameCommand::DestroyPlayer),
             _ => None,
         }
+    }
+
+    fn get_cell(sprite_sheet: &Rc<SpriteSheet>) -> Option<&Cell> {
+        sprite_sheet.cell("rust_logo_orange.png")
     }
 }

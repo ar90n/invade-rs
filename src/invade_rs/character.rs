@@ -1,9 +1,12 @@
 use uuid::Uuid;
 
-use super::{
-    beam::Beam, ferris::Ferris, missile::Missile, shield::ShieldElement, ship::Ship,
-    turbo_fish::TurboFish, wall::Wall
-};
+use super::beam::Beam;
+use super::ferris::Ferris;
+use super::missile::Missile;
+use super::shield::ShieldElement;
+use super::ship::Ship;
+use super::turbo_fish::TurboFish;
+use super::wall::Wall;
 use crate::engine::geometry::Rect;
 use crate::engine::DrawCommand;
 

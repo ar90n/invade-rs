@@ -1,6 +1,6 @@
+use super::character::{GameCharacter, GameCommand, Id};
 use crate::engine::geometry::Rect;
 use crate::engine::DrawCommand;
-use super::character::{GameCommand, Id, GameCharacter};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum WallType {
@@ -21,7 +21,11 @@ impl Wall {
 
     pub fn new(wall_type: WallType, bounding_box: Rect) -> Self {
         let id = Id::new();
-        Self { id, wall_type, bounding_box }
+        Self {
+            id,
+            wall_type,
+            bounding_box,
+        }
     }
 
     pub fn wall_type(&self) -> WallType {

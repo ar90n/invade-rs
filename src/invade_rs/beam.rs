@@ -3,9 +3,9 @@ use std::rc::Rc;
 use crate::engine::geometry::Rect;
 use crate::engine::geometry::{Point, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
-use crate::engine::{DrawCommand, Game};
+use crate::engine::DrawCommand;
 
-use super::character::{layers, GameCommand, Id, GameCharacter};
+use super::character::{layers, GameCharacter, GameCommand, Id};
 
 pub enum BeamColor {
     Blue,

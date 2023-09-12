@@ -16,7 +16,7 @@ pub trait StateMachine<E> {
 
 pub struct StateMachineRunner<E, S: StateMachine<E> + Default + PartialEq> {
     pub state: S,
-    phantom: PhantomData<E>
+    phantom: PhantomData<E>,
 }
 
 impl<E, S: StateMachine<E> + Default + PartialEq> StateMachineRunner<E, S> {
@@ -28,7 +28,7 @@ impl<E, S: StateMachine<E> + Default + PartialEq> StateMachineRunner<E, S> {
     }
 
     pub fn update(&mut self, delta: f32, events: &[E]) -> Result<()> {
-        let mut next_state = self.state.update(delta, events);
+        let next_state = self.state.update(delta, events);
         self.transition(next_state)
     }
 

@@ -174,9 +174,7 @@ impl Ferris {
 
     pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
         match other {
-            GameCharacter::Missile(_) => {
-                Some(GameCommand::DestroyCharacter(self.id().clone()))
-            }
+            GameCharacter::Missile(_) => Some(GameCommand::DestroyCharacter(self.id().clone())),
             GameCharacter::Wall(wall) => match (wall.wall_type(), self.state) {
                 (WallType::Left, FerrisState::MovingLeft) => Some(GameCommand::TurnFerris),
                 (WallType::Right, FerrisState::MovingRight) => Some(GameCommand::TurnFerris),
