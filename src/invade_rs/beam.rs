@@ -5,7 +5,7 @@ use crate::engine::geometry::{Point, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::{DrawCommand, Game};
 
-use super::character::{Character, GameCommand, Id};
+use super::character::{Character, GameCommand, Id, layers};
 
 pub enum BeamColor {
     Blue,
@@ -29,11 +29,11 @@ pub struct Beam {
     position: Point,
     sprite_sheet: Rc<SpriteSheet>,
     cell: Cell,
-    velocity: i16,
+    velocity: f32,
 }
 
 impl Beam {
-    const VELOCITY: i16 = 1;
+    const DEFAULT_VELOCITY: f32 = 80.0 / 1000.0;
 
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
         let cell = sprite_sheet
@@ -53,7 +53,7 @@ impl Beam {
             position,
             sprite_sheet,
             cell,
-            velocity: Self::VELOCITY,
+            velocity: Self::DEFAULT_VELOCITY,
         }
     }
 
@@ -75,8 +75,8 @@ impl Character for Beam {
         Rect::new(position, shape)
     }
 
-    fn update(&mut self, delta: f32) -> Option<GameCommand> {
-        self.position.y += self.velocity;
+    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+        self.position.y += (self.velocity * delta_ms).round() as i16;
 
         None
     }
@@ -87,7 +87,7 @@ impl Character for Beam {
         let position = self.position.clone();
 
         Some(DrawCommand(
-            1,
+            layers::BEAM,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),

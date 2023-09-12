@@ -26,3 +26,12 @@ pub trait Character {
     }
     fn draw(&self) -> Option<DrawCommand>;
 }
+
+pub mod layers {
+    pub const BACKGROUND: u8 = 0;
+    pub const SHIELD: u8 = 1;
+    pub const BEAM: u8 = 2;
+    pub const MISSILE: u8 = 3;
+    pub const SHIP: u8 = 4;
+    pub const ENEMY: u8 = 5;
+}

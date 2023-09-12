@@ -19,7 +19,7 @@ use self::renderer::Renderer;
 type SharedLoopClosure = Rc<RefCell<Option<browser::LoopClosure>>>;
 
 
-pub struct DrawCommand(pub i16, pub Box<dyn Fn(&dyn Renderer)>);
+pub struct DrawCommand(pub u8, pub Box<dyn Fn(&dyn Renderer)>);
 
 #[async_trait(?Send)]
 pub trait Game {
@@ -33,7 +33,6 @@ pub struct GameLoop<G: Game + 'static, R: renderer::Renderer + 'static, E: Event
     renderer: R,
     event_source: E,
     last_frame: f64,
-    accumulated_delta: f32,
 }
 
 impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoop<G, R, E> {
@@ -43,7 +42,6 @@ impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoo
             renderer,
             event_source,
             last_frame,
-            accumulated_delta: 0.0,
         }
     }
 
@@ -90,7 +88,6 @@ impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoo
 
         self.game.update(delta, &events);
 
-        self.accumulated_delta += delta;
         self.last_frame = perf;
     }
 

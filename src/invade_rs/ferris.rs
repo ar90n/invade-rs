@@ -6,7 +6,7 @@ use crate::engine::sprite::SpriteSheet;
 use crate::engine::DrawCommand;
 
 use super::beam::{Beam, BeamColor};
-use super::character::{Character, GameCommand, Id};
+use super::character::{Character, GameCommand, Id, layers};
 
 #[derive(Clone, Copy)]
 pub enum FerrisColor {
@@ -45,6 +45,8 @@ pub struct Ferris {
 }
 
 impl Ferris {
+    const SPAWN_BEAM_RATIO: f32 = 0.00010;
+
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
         let cell = sprite_sheet
             .cell("ferris_blue_0.png")
@@ -108,19 +110,18 @@ impl Character for Ferris {
     }
 
     fn update(&mut self, delta: f32) -> Option<GameCommand> {
-        const SPAWN_BEAM_RATIO: f32 = 0.00010;
-
         self.animation.update(delta);
-        if rand::random::<f32>() < SPAWN_BEAM_RATIO {
-            let beam = Beam::new(
-                self.sprite_sheet.clone(),
-                self.get_beam_spawn_point(),
-                self.color.into(),
-            );
-            Some(GameCommand::SpawnCharacter(Box::new(beam)))
-        } else {
-            None
+
+        if Self::SPAWN_BEAM_RATIO < rand::random::<f32>() {
+            return None;
         }
+
+        let beam = Beam::new(
+            self.sprite_sheet.clone(),
+            self.get_beam_spawn_point(),
+            self.color.into(),
+        );
+        Some(GameCommand::SpawnCharacter(Box::new(beam)))
     }
 
     fn draw(&self) -> Option<DrawCommand> {
@@ -133,7 +134,7 @@ impl Character for Ferris {
         let position = self.position.clone();
 
         Some(DrawCommand(
-            2,
+            layers::ENEMY,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),

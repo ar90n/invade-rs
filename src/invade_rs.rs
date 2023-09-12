@@ -16,7 +16,6 @@ use self::ferris::{Ferris, FerrisColor};
 use self::fsm::{State, StateMachine, StateMachineRunner};
 use self::shield::ShieldElement;
 use self::ship::Ship;
-use self::turbo_fish::TurboFish;
 
 mod beam;
 mod character;
@@ -26,6 +25,8 @@ mod missile;
 mod shield;
 mod ship;
 mod turbo_fish;
+
+const SCREEN_RECT: Rect = Rect::new_from_x_y_w_h(0, 0, 600, 600);
 
 #[derive(Clone)]
 struct Created {}
@@ -102,6 +103,64 @@ struct InGame {
 }
 
 impl InGame {
+    fn apply_event(&self, event: &Event) {
+        match event {
+            Event::KeyDown(key) => match key.as_str() {
+                "ArrowRight" => self.player.borrow_mut().move_right(),
+                "ArrowLeft" => self.player.borrow_mut().move_left(),
+                "Space" => self.player.borrow_mut().shot(),
+                _ => {}
+            },
+            Event::KeyUp(key) => match key.as_str() {
+                "ArrowRight" => self.player.borrow_mut().stop(),
+                "ArrowLeft" => self.player.borrow_mut().stop(),
+                _ => {}
+            },
+        }
+    }
+
+    fn update_game(&self, delta: f32) -> Vec<GameCommand> {
+        const TURBO_FISH_APPEAR_PROBABILITY: f32 = 0.001;
+
+        let mut commands = vec![];
+        for c in self.characters.iter() {
+            let mut c = c.borrow_mut();
+
+            let cur_visible = c.bounding_box().intersects(&SCREEN_RECT);
+            if let Some(command) = c.update(delta) {
+                commands.push(command);
+            }
+            let next_visible = c.bounding_box().intersects(&SCREEN_RECT);
+
+            if cur_visible && !next_visible {
+                if let Some(command) = c.on_exit_screen() {
+                    commands.push(command);
+                }
+            }
+        }
+
+        if let Some(command) = self.player.borrow_mut().update(delta) {
+            commands.push(command);
+        }
+
+        if rand::random::<f32>() < TURBO_FISH_APPEAR_PROBABILITY {
+            commands.push(self.create_spawn_turbo_fish_command(&self.sprite_sheet));
+        }
+        commands
+    }
+
+    fn apply_command(&mut self, command: GameCommand) {
+        match command {
+            GameCommand::SpawnCharacter(new_character) => {
+                self.characters.push(Rc::new(RefCell::new(new_character)));
+            }
+            GameCommand::DestroyCharacter(id) => {
+                self.characters.retain(|c| c.borrow().id() != &id);
+            }
+            _ => {}
+        }
+    }
+
     fn new(
         sprite_sheet: Rc<sprite::SpriteSheet>,
         characters: Vec<Rc<RefCell<Box<dyn Character>>>>,
@@ -114,102 +173,35 @@ impl InGame {
         }
     }
 
-    fn spawn_turbo_fish(&self, sprite_sheet: &Rc<SpriteSheet>) -> Rc<RefCell<Box<dyn Character>>> {
+    fn create_spawn_turbo_fish_command(&self, sprite_sheet: &Rc<SpriteSheet>) -> GameCommand {
         const Y_ORIGIN: i16 = 50;
 
         let ship_shape = turbo_fish::TurboFish::get_shape(sprite_sheet);
-        //let x_origin =  -ship_shape.width;
-        let x_origin = 0;
+        let x_origin = -ship_shape.width;
 
         let position = Point {
             x: x_origin,
             y: Y_ORIGIN,
         };
         let turbo_fish = turbo_fish::TurboFish::new(sprite_sheet.clone(), position);
-        Rc::new(RefCell::new(Box::new(turbo_fish) as Box<dyn Character>))
+        GameCommand::SpawnCharacter(Box::new(turbo_fish))
     }
 }
 
 #[async_trait(?Send)]
 impl State<GameStateMachine> for InGame {
     fn update(&self, delta: f32, events: &[Event]) -> GameStateMachine {
-        const TURBO_FISH_APPEAR_PROBABILITY: f32 = 0.001;
+        events.iter().for_each(|event| self.apply_event(event));
 
+        let commands = self.update_game(delta);
 
-        let mut next_state = self.clone();
-
-        browser::log(&format!("InGame update: {} {}", delta, next_state.characters.len()));
-
-        events.iter().for_each(|event| match event {
-            Event::KeyDown(key) => match key.as_str() {
-                "ArrowRight" => next_state.player.borrow_mut().move_right(),
-                "ArrowLeft" => next_state.player.borrow_mut().move_left(),
-                "Space" => next_state.player.borrow_mut().shot(),
-                _ => {}
-            },
-            Event::KeyUp(key) => match key.as_str() {
-                "ArrowRight" => next_state.player.borrow_mut().stop(),
-                "ArrowLeft" => next_state.player.borrow_mut().stop(),
-                _ => {}
-            },
-        });
-
-        let mut cur_visible = vec![];
-        let mut next_visible = vec![];
-        let mut commands = vec![];
-        for c in next_state.characters.iter_mut() {
-            let mut c= c.borrow_mut();
-
-            cur_visible.push(c.bounding_box().intersects(&Rect::new_from_x_y_w_h(0, 0, 600, 600)));
-            let command = c.update(delta);
-            if let Some(command) = command {
-                commands.push(command);
+        let next_state = {
+            let mut next_state = self.clone();
+            for c in commands.into_iter() {
+                next_state.apply_command(c);
             }
-            next_visible.push(c.bounding_box().intersects(&Rect::new_from_x_y_w_h(0, 0, 600, 600)));
-        }
-
-        for ((c, cur_visible), next_visible) in next_state
-            .characters
-            .iter_mut()
-            .zip(cur_visible.into_iter())
-            .zip(next_visible.into_iter())
-        {
-            if cur_visible && !next_visible {
-                let command = c.borrow_mut().on_exit_screen();
-                if let Some(command) = command {
-                    commands.push(command);
-                }
-            }
-        }
-
-        let command = next_state.player.borrow_mut().update(delta);
-        if let Some(command) = command {
-            commands.push(command);
-        }
-
-
-        if rand::random::<f32>() < TURBO_FISH_APPEAR_PROBABILITY {
             next_state
-                .characters
-                .push(self.spawn_turbo_fish(&self.sprite_sheet));
-        }
-
-        for c in commands.into_iter() {
-            match c {
-                GameCommand::SpawnCharacter(new_character) => {
-                    next_state
-                        .characters
-                        .push(Rc::new(RefCell::new(new_character)));
-                }
-                GameCommand::DestroyCharacter(id) => {
-                    next_state
-                        .characters
-                        .retain(|c| c.borrow().id() != &id);
-                }
-                _ => {}
-            }
-        }
-
+        };
         GameStateMachine::InGame(next_state)
     }
 
@@ -407,11 +399,11 @@ impl Game for InvadeRs {
         let sprite_sheet = self.load_sprite_sheet().await?;
         let characters = {
             let mut characters = vec![];
-            characters.append(&mut self.spawn_ferris_fleet(&sprite_sheet, 600));
-            characters.append(&mut self.spawn_aligned_shields(&sprite_sheet, 600));
+            characters.append(&mut self.spawn_ferris_fleet(&sprite_sheet, SCREEN_RECT.width()));
+            characters.append(&mut self.spawn_aligned_shields(&sprite_sheet, SCREEN_RECT.width()));
             characters
         };
-        let player = self.spawn_ship(&sprite_sheet, 600);
+        let player = self.spawn_ship(&sprite_sheet, SCREEN_RECT.width());
 
         self.runner
             //.transition(OutGame::new(sprite_sheet, characters).into())?;
@@ -459,7 +451,7 @@ impl Game for InvadeRs {
         let clear_command = DrawCommand(
             0,
             Box::new(|renderer: &dyn Renderer| {
-                renderer.clear(&Rect::new_from_x_y_w_h(0, 0, 600, 600));
+                renderer.clear(&SCREEN_RECT);
             }),
         );
 

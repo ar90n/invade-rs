@@ -6,7 +6,7 @@ use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::DrawCommand;
 
-use super::character::{Character, GameCommand, Id};
+use super::character::{Character, GameCommand, Id, layers};
 
 #[derive(Clone, Copy)]
 enum ShieldType {
@@ -70,7 +70,7 @@ impl Character for ShieldElement {
         let position = self.position.clone();
 
         Some(DrawCommand(
-            1,
+            layers::SHIELD,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),

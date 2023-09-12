@@ -5,7 +5,7 @@ use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::SpriteSheet;
 use crate::engine::{browser, DrawCommand};
 
-use super::character::{Character, GameCommand, Id};
+use super::character::{Character, GameCommand, Id, layers};
 
 #[derive(Clone)]
 pub struct TurboFish {
@@ -16,6 +16,8 @@ pub struct TurboFish {
 }
 
 impl TurboFish {
+    const DEFAULT_VELOCITY: f32 = 100.0 / 1000.0;
+
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
         let cell = sprite_sheet
             .cell("ferris_blue_0.png")
@@ -54,11 +56,9 @@ impl Character for TurboFish {
         Rect::new(self.position.clone(), Self::get_shape(&self.sprite_sheet))
     }
 
-    fn update(&mut self, delta: f32) -> Option<GameCommand> {
-        const VELOCITY: i16 = 3;
-
-        self.animation.update(delta);
-        self.position.x += VELOCITY;
+    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+        self.animation.update(delta_ms);
+        self.position.x += (Self::DEFAULT_VELOCITY * delta_ms).round() as i16;
 
         None
     }
@@ -73,7 +73,7 @@ impl Character for TurboFish {
         let position = self.position.clone();
 
         Some(DrawCommand(
-            1,
+            layers::ENEMY,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),

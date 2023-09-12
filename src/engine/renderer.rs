@@ -24,14 +24,13 @@ impl CanvasRenderer {
 
 impl Renderer for CanvasRenderer {
     fn clear(&self, rect: &Rect) {
-        self.context.rect(
+        self.context.set_fill_style(&JsValue::from_str("black"));
+        self.context.fill_rect(
             rect.x().into(),
             rect.y().into(),
             rect.width().into(),
             rect.height().into(),
         );
-        self.context.set_fill_style(&JsValue::from_str("black"));
-        self.context.fill();
     }
 
     fn draw_image(&self, image: &HtmlImageElement, source: &Rect, destination: &Rect) {

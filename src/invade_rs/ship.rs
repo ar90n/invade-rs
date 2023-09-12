@@ -4,7 +4,7 @@ use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sprite::{Cell, SpriteSheet};
 use crate::engine::{DrawCommand, Game};
 
-use super::character::{Character, GameCommand, Id};
+use super::character::{Character, GameCommand, Id, layers};
 use super::missile::Missile;
 
 #[derive(Clone)]
@@ -13,12 +13,12 @@ pub struct Ship {
     position: Point,
     sprite_sheet: Rc<SpriteSheet>,
     cell: Cell,
-    velocity: i16,
+    velocity: f32,
     need_shot: bool,
 }
 
 impl Ship {
-    const VELOCITY: i16 = 1;
+    const DEFAULT_VELOCITY: f32 = 90.0/ 1000.0;
 
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
         let cell = sprite_sheet
@@ -38,21 +38,21 @@ impl Ship {
             position,
             sprite_sheet,
             cell,
-            velocity: 0,
+            velocity: 0.0,
             need_shot: false,
         }
     }
 
     pub fn move_left(&mut self) {
-        self.velocity = -Self::VELOCITY;
+        self.velocity = -Self::DEFAULT_VELOCITY;
     }
 
     pub fn move_right(&mut self) {
-        self.velocity = Self::VELOCITY;
+        self.velocity = Self::DEFAULT_VELOCITY;
     }
 
     pub fn stop(&mut self) {
-        self.velocity = 0;
+        self.velocity = 0.0;
     }
 
     pub fn shot(&mut self) {
@@ -78,16 +78,16 @@ impl Character for Ship {
         Rect::new(self.position.clone(), self.cell.shape())
     }
 
-    fn update(&mut self, delta: f32) -> Option<GameCommand> {
-        self.position.x += self.velocity;
+    fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
+        self.position.x += (self.velocity * delta_ms).round() as i16;
 
-        if self.need_shot {
-            self.need_shot = false;
-            let missile = Missile::new(self.sprite_sheet.clone(), self.get_missile_spawn_point());
-            Some(GameCommand::SpawnCharacter(Box::new(missile)))
-        } else {
-            None
+        if !self.need_shot {
+            return None;
         }
+
+        self.need_shot = false;
+        let missile = Missile::new(self.sprite_sheet.clone(), self.get_missile_spawn_point());
+        Some(GameCommand::SpawnCharacter(Box::new(missile)))
     }
 
     fn draw(&self) -> Option<DrawCommand> {
@@ -96,7 +96,7 @@ impl Character for Ship {
         let position = self.position.clone();
 
         Some(DrawCommand(
-            1,
+            layers::SHIP,
             Box::new(move |renderer| {
                 sprite_sheet.draw(renderer, &cell, &position);
             }),
