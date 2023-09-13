@@ -63,9 +63,6 @@ impl Ship {
         self.has_bullet = true;
     }
 
-    pub fn explode(&mut self) {
-    }
-
     fn get_missile_spawn_point(&self) -> Point {
         let ship_shape = self.cell.shape();
         let missile_shape = Missile::get_shape(&self.sprite_sheet);
@@ -80,7 +77,7 @@ impl Ship {
         &self.id
     }
     pub fn bounding_box(&self) -> Rect {
-        Rect::new(self.position.clone(), self.cell.shape())
+        Rect::new(self.position, self.cell.shape())
     }
 
     pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
@@ -98,7 +95,7 @@ impl Ship {
     pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
-        let position = self.position.clone();
+        let position = self.position;
 
         Some(DrawCommand(
             layers::SHIP,

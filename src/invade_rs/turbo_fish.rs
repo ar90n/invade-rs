@@ -39,7 +39,7 @@ impl TurboFish {
     fn new_animation() -> Sequence {
         const TURBO_FISH_ANIMATION_FRAMES: usize = 2;
 
-        let frames = (0..TURBO_FISH_ANIMATION_FRAMES).into_iter().map(|i| {
+        let frames = (0..TURBO_FISH_ANIMATION_FRAMES).map(|i| {
             let cell_name = format!("turbo_fish_yellow_{}.png", i);
             let duration = 100.0;
             Frame::new(cell_name, duration)
@@ -51,7 +51,7 @@ impl TurboFish {
         &self.id
     }
     pub fn bounding_box(&self) -> Rect {
-        Rect::new(self.position.clone(), Self::get_shape(&self.sprite_sheet))
+        Rect::new(self.position, Self::get_shape(&self.sprite_sheet))
     }
 
     pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
@@ -68,7 +68,7 @@ impl TurboFish {
             .expect("cell not found")
             .clone();
         let sprite_sheet = self.sprite_sheet.clone();
-        let position = self.position.clone();
+        let position = self.position;
 
         Some(DrawCommand(
             layers::ENEMY,

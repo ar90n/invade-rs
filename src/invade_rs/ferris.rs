@@ -25,9 +25,9 @@ pub enum FerrisColor {
     Magenta,
 }
 
-impl Into<&str> for FerrisColor {
-    fn into(self) -> &'static str {
-        match self {
+impl From<FerrisColor> for &str {
+    fn from(val: FerrisColor) -> Self {
+        match val {
             FerrisColor::Blue => "blue",
             FerrisColor::Green => "green",
             FerrisColor::Magenta => "magenta",
@@ -35,9 +35,9 @@ impl Into<&str> for FerrisColor {
     }
 }
 
-impl Into<BeamColor> for FerrisColor {
-    fn into(self) -> BeamColor {
-        match self {
+impl From<FerrisColor> for BeamColor {
+    fn from(val: FerrisColor) -> Self {
+        match val {
             FerrisColor::Blue => BeamColor::Blue,
             FerrisColor::Green => BeamColor::Green,
             FerrisColor::Magenta => BeamColor::Magenta,
@@ -98,7 +98,7 @@ impl Ferris {
     fn new_animation(color: FerrisColor) -> Sequence {
         const FERRIS_ANIMATION_FRAMES: usize = 4;
 
-        let frames = (0..=FERRIS_ANIMATION_FRAMES).into_iter().map(|i| {
+        let frames = (0..=FERRIS_ANIMATION_FRAMES).map(|i| {
             let color_str: &str = color.into();
             let cell_name = format!("ferris_{}_{}.png", color_str, i);
             let duration = 150.0;
@@ -114,7 +114,7 @@ impl Ferris {
     pub fn bounding_box(&self) -> Rect {
         let cell = self.get_current_frame_cell().expect("cell not found");
         let shape = cell.shape();
-        let position = self.position.clone();
+        let position = self.position;
 
         Rect::new(position, shape)
     }
@@ -154,7 +154,7 @@ impl Ferris {
             .expect("cell not found")
             .clone();
         let sprite_sheet = self.sprite_sheet.clone();
-        let position = self.position.clone();
+        let position = self.position;
 
         Some(DrawCommand(
             layers::ENEMY,

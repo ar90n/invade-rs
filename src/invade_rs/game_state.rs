@@ -63,11 +63,11 @@ impl Default for GameStateMachine {
 
 impl PartialEq for GameStateMachine {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Created(_), Self::Created(_)) => true,
-            (Self::OutGame(_), Self::OutGame(_)) => true,
-            (Self::InGame(_), Self::InGame(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::Created(_), Self::Created(_))
+                | (Self::OutGame(_), Self::OutGame(_))
+                | (Self::InGame(_), Self::InGame(_))
+        )
     }
 }

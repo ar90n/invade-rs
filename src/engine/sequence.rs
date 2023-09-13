@@ -7,8 +7,8 @@ pub struct Frame {
 impl Frame {
     pub fn new(cell_name: String, duration: f32) -> Self {
         Self {
-            cell_name: cell_name,
-            duration: duration,
+            cell_name,
+            duration,
         }
     }
 }
@@ -23,7 +23,7 @@ pub struct Sequence {
 impl Sequence {
     pub fn new(frames: Vec<Frame>) -> Self {
         Self {
-            frames: frames,
+            frames,
             acc_time: 0.0,
             current_key_point_index: 0,
         }

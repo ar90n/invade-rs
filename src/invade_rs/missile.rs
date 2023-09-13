@@ -19,7 +19,7 @@ impl Missile {
     const DEFAULT_VELOCITY: f32 = 120.0 / 1000.0;
 
     pub fn get_shape(sprite_sheet: &Rc<SpriteSheet>) -> Shape {
-        let cell = Self::get_cell(&sprite_sheet).expect("cell not found");
+        let cell = Self::get_cell(sprite_sheet).expect("cell not found");
         cell.shape()
     }
 
@@ -42,7 +42,7 @@ impl Missile {
     }
 
     pub fn bounding_box(&self) -> Rect {
-        Rect::new(self.position.clone(), self.cell.shape())
+        Rect::new(self.position, self.cell.shape())
     }
 
     pub fn update(&mut self, delta_ms: f32) -> Option<GameCommand> {
@@ -54,7 +54,7 @@ impl Missile {
     pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
-        let position = self.position.clone();
+        let position = self.position;
 
         Some(DrawCommand(
             layers::MISSILE,

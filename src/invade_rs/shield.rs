@@ -52,7 +52,7 @@ impl ShieldElement {
     }
 
     pub fn bounding_box(&self) -> Rect {
-        Rect::new(self.position.clone(), self.cell.shape())
+        Rect::new(self.position, self.cell.shape())
     }
 
     pub fn update(&mut self, _delta_ms: f32) -> Option<GameCommand> {
@@ -62,7 +62,7 @@ impl ShieldElement {
     pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
-        let position = self.position.clone();
+        let position = self.position;
 
         Some(DrawCommand(
             layers::SHIELD,

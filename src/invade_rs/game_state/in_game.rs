@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use anyhow::Result;
 
-use crate::engine::browser;
+
 use crate::engine::event::Event;
 use crate::engine::geometry::{Point, Rect};
 use crate::engine::sprite::SpriteSheet;
@@ -139,7 +139,7 @@ impl InGame {
         let mut draw_commands = vec![];
         draw_commands.append(&mut self.characters.iter().map(|c| c.borrow().draw()).collect());
         draw_commands.push(self.player.borrow().draw());
-        draw_commands.into_iter().filter_map(|c| c).collect()
+        draw_commands.into_iter().flatten().collect()
     }
 
     fn create_spawn_turbo_fish_command(&self, sprite_sheet: &Rc<SpriteSheet>) -> GameCommand {
@@ -199,8 +199,8 @@ impl State<Event, GameStateMachine> for InGame {
     }
 }
 
-impl Into<GameStateMachine> for InGame {
-    fn into(self) -> GameStateMachine {
-        GameStateMachine::InGame(self)
+impl From<InGame> for GameStateMachine {
+    fn from(val: InGame) -> Self {
+        GameStateMachine::InGame(val)
     }
 }

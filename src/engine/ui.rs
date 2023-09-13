@@ -34,7 +34,7 @@ fn find_ui() -> Result<Element> {
 pub fn add_click_handler(elem: HtmlElement) -> UnboundedReceiver<()> {
     let (mut click_sender, click_receiver) = unbounded();
     let on_click = closure_wrap(Box::new(move || {
-        click_sender.start_send(());
+        let _ =click_sender.start_send(());
     }) as Box<dyn FnMut()>);
     elem.set_onclick(Some(on_click.as_ref().unchecked_ref()));
     on_click.forget();

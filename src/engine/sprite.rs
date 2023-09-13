@@ -22,9 +22,9 @@ struct SheetRect {
     pub h: i16,
 }
 
-impl Into<Rect> for SheetRect {
-    fn into(self) -> Rect {
-        Rect::new_from_x_y_w_h(self.x, self.y, self.w, self.h)
+impl From<SheetRect> for Rect {
+    fn from(val: SheetRect) -> Self {
+        Rect::new_from_x_y_w_h(val.x, val.y, val.w, val.h)
     }
 }
 
@@ -68,7 +68,7 @@ impl SpriteSheet {
 
     pub fn draw(&self, renderer: &dyn Renderer, cell: &Cell, destination: &Point) {
         let source: Rect = cell.clone().frame.into();
-        let destination = Rect::new(destination.clone(), cell.shape());
+        let destination = Rect::new(*destination, cell.shape());
 
         renderer.draw_image(&self.image, &source, &destination)
     }

@@ -33,8 +33,8 @@ impl State<Event, GameStateMachine> for Created {
     }
 }
 
-impl Into<GameStateMachine> for Created {
-    fn into(self) -> GameStateMachine {
-        GameStateMachine::Created(self)
+impl From<Created> for GameStateMachine {
+    fn from(val: Created) -> Self {
+        GameStateMachine::Created(val)
     }
 }

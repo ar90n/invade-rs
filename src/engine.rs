@@ -84,7 +84,7 @@ impl<G: Game + 'static, R: Renderer + 'static, E: EventSource + 'static> GameLoo
     fn update(&mut self, perf: f64, events: &[Event]) -> Result<()> {
         let delta = (perf - self.last_frame) as f32;
 
-        self.game.update(delta, &events)?;
+        self.game.update(delta, events)?;
 
         self.last_frame = perf;
         Ok(())

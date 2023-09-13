@@ -40,7 +40,7 @@ impl InvadeRs {
     async fn load_sprite_sheet(&mut self) -> Result<Rc<SpriteSheet>> {
         sprite::SpriteSheet::load("texture.json", "texture.png")
             .await
-            .map(|sprite_sheet| Rc::new(sprite_sheet))
+            .map(Rc::new)
     }
 }
 

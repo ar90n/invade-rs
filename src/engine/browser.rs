@@ -4,7 +4,7 @@ use js_sys::ArrayBuffer;
 use std::future::Future;
 use web_sys::HtmlImageElement;
 
-use wasm_bindgen::closure::{WasmClosure, WasmClosureFnOnce};
+use wasm_bindgen::closure::{WasmClosure};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{console, CanvasRenderingContext2d, Document, HtmlCanvasElement, Response, Window};
@@ -92,12 +92,6 @@ pub fn request_animation_frame(callback: &Closure<dyn FnMut(f64)>) -> Result<i32
         .map_err(|err| anyhow!("Cannot request animation frame {:#?}", err))
 }
 
-pub fn closure_once<F, A, R>(fn_once: F) -> Closure<F::FnMut>
-where
-    F: 'static + WasmClosureFnOnce<A, R>,
-{
-    closure_once(fn_once)
-}
 
 pub fn closure_wrap<T: WasmClosure + ?Sized>(data: Box<T>) -> Closure<T> {
     Closure::wrap(data)

@@ -57,7 +57,7 @@ impl OutGame {
         let mut draw_commands = vec![];
         draw_commands.append(&mut self.characters.iter().map(|c| c.borrow().draw()).collect());
         draw_commands.push(self.player.borrow().draw());
-        draw_commands.into_iter().filter_map(|c| c).collect()
+        draw_commands.into_iter().flatten().collect()
     }
 
     fn spawn_ferris_fleet(
@@ -122,7 +122,7 @@ impl OutGame {
             y: Y_ORIGIN,
         };
         let ship = Ship::new(sprite_sheet.clone(), position);
-        Rc::new(RefCell::new(ship.into()))
+        Rc::new(RefCell::new(ship))
     }
 
     fn spawn_walls(screen_width: i16, screen_height: i16) -> Vec<Rc<RefCell<GameCharacter>>> {
@@ -160,8 +160,8 @@ impl State<Event, GameStateMachine> for OutGame {
     }
 }
 
-impl Into<GameStateMachine> for OutGame {
-    fn into(self) -> GameStateMachine {
-        GameStateMachine::OutGame(self)
+impl From<OutGame> for GameStateMachine {
+    fn from(val: OutGame) -> Self {
+        GameStateMachine::OutGame(val)
     }
 }

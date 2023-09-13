@@ -13,9 +13,9 @@ pub enum BeamColor {
     Magenta,
 }
 
-impl Into<&str> for BeamColor {
-    fn into(self) -> &'static str {
-        match self {
+impl From<BeamColor> for &str {
+    fn from(val: BeamColor) -> Self {
+        match val {
             BeamColor::Blue => "blue",
             BeamColor::Green => "green",
             BeamColor::Magenta => "magenta",
@@ -69,7 +69,7 @@ impl Beam {
 
     pub fn bounding_box(&self) -> Rect {
         let shape = self.cell.shape();
-        let position = self.position.clone();
+        let position = self.position;
         Rect::new(position, shape)
     }
 
@@ -82,7 +82,7 @@ impl Beam {
     pub fn draw(&self) -> Option<DrawCommand> {
         let cell = self.cell.clone();
         let sprite_sheet = self.sprite_sheet.clone();
-        let position = self.position.clone();
+        let position = self.position;
 
         Some(DrawCommand(
             layers::BEAM,
