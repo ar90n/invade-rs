@@ -7,20 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: dtolnay/toolchain@v1
+      - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: 1.64.0
           target: wasm32-unknown-unknown
           override: true
           components: clippy
-      - uses: actions-rs/install@v1
+      - uses: actions-rs/install@v0.1
         with:
           crate: wasm-pack
           use-tool-cache: true
-      - name: Annotate commit with clippy warnings
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v3
         with:
           node-version: '16.13.0'
