@@ -15,6 +15,7 @@ pub struct Ship {
     cell: Cell,
     velocity: f32,
     need_shot: bool,
+    has_bullet: bool,
 }
 
 impl Ship {
@@ -37,6 +38,7 @@ impl Ship {
             cell,
             velocity: 0.0,
             need_shot: false,
+            has_bullet: true,
         }
     }
 
@@ -53,7 +55,15 @@ impl Ship {
     }
 
     pub fn shot(&mut self) {
-        self.need_shot = true;
+        self.need_shot = self.has_bullet;
+        self.has_bullet = false;
+    }
+
+    pub fn reload(&mut self) {
+        self.has_bullet = true;
+    }
+
+    pub fn explode(&mut self) {
     }
 
     fn get_missile_spawn_point(&self) -> Point {
@@ -104,7 +114,7 @@ impl Ship {
 
     pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
         match other {
-            GameCharacter::Beam(_) => Some(GameCommand::DestroyPlayer),
+            GameCharacter::Beam(_) | GameCharacter::Ferris(_) => Some(GameCommand::DestroyPlayer),
             _ => None,
         }
     }

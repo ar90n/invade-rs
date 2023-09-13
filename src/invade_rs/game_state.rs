@@ -22,20 +22,9 @@ pub enum GameStateMachine {
 impl GameStateMachine {
     pub fn draw(&self) -> Vec<DrawCommand> {
         match self {
-            Self::Created(_) => vec![],
-            Self::OutGame(state) => state
-                .characters
-                .iter()
-                .map(|c| c.borrow().draw())
-                .filter_map(|c| c)
-                .collect(),
-            Self::InGame(state) => {
-                let mut draw_commands = vec![];
-                draw_commands
-                    .append(&mut state.characters.iter().map(|c| c.borrow().draw()).collect());
-                draw_commands.push(state.player.borrow().draw());
-                draw_commands.into_iter().filter_map(|c| c).collect()
-            }
+            Self::Created(state) => state.draw(),
+            Self::OutGame(state) => state.draw(),
+            Self::InGame(state) => state.draw(),
         }
     }
 }

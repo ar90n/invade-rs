@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use crate::engine::browser;
 use crate::engine::geometry::{Point, Rect, Shape};
 use crate::engine::sequence::{Frame, Sequence};
 use crate::engine::sprite::{Cell, SpriteSheet};
@@ -8,7 +7,7 @@ use crate::engine::DrawCommand;
 
 use super::beam::{Beam, BeamColor};
 use super::character::{layers, GameCharacter, GameCommand, Id};
-use super::wall::{Wall, WallType};
+use super::wall::WallType;
 
 #[derive(Clone, Copy)]
 enum FerrisState {
@@ -76,7 +75,6 @@ impl Ferris {
             sprite_sheet,
             animation,
             color,
-            //state: FerrisState::Idle,
             state: FerrisState::MovingLeft,
         }
     }
@@ -126,30 +124,28 @@ impl Ferris {
         self.position.x += (self.get_velocity_x() * delta_ms).round() as i16;
         self.position.y += (self.get_velocity_y() * delta_ms).round() as i16;
 
-        if let FerrisState::TurnLeft(y) = self.state {
-            //browser::log(&format!("y: {}, position.y: {}", y, self.position.y));
-            if (y + Self::get_shape(&self.sprite_sheet).height) < self.position.y {
+        match self.state {
+            FerrisState::TurnLeft(ahead_position_y) if ahead_position_y < self.position.y => {
+                self.position.y = ahead_position_y;
                 self.move_left();
-                self.position.y = y + Self::get_shape(&self.sprite_sheet).height;
             }
-        }
-        if let FerrisState::TurnRight(y) = self.state {
-            //browser::log(&format!("y: {}, position.y: {}", y, self.position.y));
-            if (y + Self::get_shape(&self.sprite_sheet).height) < self.position.y {
+            FerrisState::TurnRight(ahead_position_y) if ahead_position_y < self.position.y => {
+                self.position.y = ahead_position_y;
                 self.move_right();
-                self.position.y = y + Self::get_shape(&self.sprite_sheet).height;
             }
+            _ => {}
         }
 
-        if Self::SPAWN_BEAM_RATIO < rand::random::<f32>() {
-            return None;
+        if rand::random::<f32>() < Self::SPAWN_BEAM_RATIO {
+            let beam = Beam::new(
+                self.sprite_sheet.clone(),
+                self.get_beam_spawn_point(),
+                self.color.into(),
+            );
+            return Some(GameCommand::SpawnCharacter(beam.into()));
         }
-        let beam = Beam::new(
-            self.sprite_sheet.clone(),
-            self.get_beam_spawn_point(),
-            self.color.into(),
-        );
-        Some(GameCommand::SpawnCharacter(beam.into()))
+
+        None
     }
 
     pub fn draw(&self) -> Option<DrawCommand> {
@@ -174,7 +170,9 @@ impl Ferris {
 
     pub fn on_collide(&self, other: &GameCharacter) -> Option<GameCommand> {
         match other {
-            GameCharacter::Missile(_) => Some(GameCommand::DestroyCharacter(self.id().clone())),
+            GameCharacter::Missile(_) | GameCharacter::Ferris(_) => {
+                Some(GameCommand::DestroyCharacter(self.id().clone()))
+            }
             GameCharacter::Wall(wall) => match (wall.wall_type(), self.state) {
                 (WallType::Left, FerrisState::MovingLeft) => Some(GameCommand::TurnFerris),
                 (WallType::Right, FerrisState::MovingRight) => Some(GameCommand::TurnFerris),
@@ -201,9 +199,10 @@ impl Ferris {
     }
 
     pub fn turn(&mut self) {
+        let ahead_position_y = self.position.y + Self::get_shape(&self.sprite_sheet).height;
         self.state = match self.state {
-            FerrisState::MovingLeft => FerrisState::TurnRight(self.position.y),
-            FerrisState::MovingRight => FerrisState::TurnLeft(self.position.y),
+            FerrisState::MovingLeft => FerrisState::TurnRight(ahead_position_y),
+            FerrisState::MovingRight => FerrisState::TurnLeft(ahead_position_y),
             _ => self.state,
         };
     }

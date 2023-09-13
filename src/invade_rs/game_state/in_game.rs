@@ -3,14 +3,17 @@ use std::rc::Rc;
 
 use anyhow::Result;
 
+use crate::engine::browser;
 use crate::engine::event::Event;
 use crate::engine::geometry::{Point, Rect};
 use crate::engine::sprite::SpriteSheet;
+use crate::engine::DrawCommand;
 
 use super::super::character::{GameCharacter, GameCommand};
 use super::super::fsm::State;
 use super::super::ship::Ship;
 use super::super::turbo_fish;
+use super::out_game::OutGame;
 use super::GameStateMachine;
 
 const SCREEN_RECT: Rect = Rect::new_from_x_y_w_h(0, 0, 600, 600);
@@ -20,6 +23,7 @@ pub struct InGame {
     sprite_sheet: Rc<SpriteSheet>,
     pub characters: Vec<Rc<RefCell<GameCharacter>>>,
     pub player: Rc<RefCell<Ship>>,
+    is_game_over: bool,
 }
 
 impl InGame {
@@ -34,6 +38,7 @@ impl InGame {
             Event::KeyUp(key) => match key.as_str() {
                 "ArrowRight" => self.player.borrow_mut().stop(),
                 "ArrowLeft" => self.player.borrow_mut().stop(),
+                "Space" => self.player.borrow_mut().reload(),
                 _ => {}
             },
         }
@@ -73,6 +78,16 @@ impl InGame {
                     }
                 }
             }
+
+            let player = self.player.borrow();
+            if c.bounding_box().intersects(&player.bounding_box()) {
+                if let Some(command) = c.on_collide(&player.clone().into()) {
+                    commands.push(command);
+                }
+                if let Some(command) = player.on_collide(&c) {
+                    commands.push(command);
+                }
+            }
         }
 
         if let Some(command) = self.player.borrow_mut().update(delta) {
@@ -101,6 +116,9 @@ impl InGame {
                     }
                 }
             }
+            GameCommand::DestroyPlayer => {
+                self.is_game_over = true;
+            }
             _ => {}
         }
     }
@@ -114,7 +132,14 @@ impl InGame {
             sprite_sheet,
             characters,
             player,
+            is_game_over: false,
         }
+    }
+    pub fn draw(&self) -> Vec<DrawCommand> {
+        let mut draw_commands = vec![];
+        draw_commands.append(&mut self.characters.iter().map(|c| c.borrow().draw()).collect());
+        draw_commands.push(self.player.borrow().draw());
+        draw_commands.into_iter().filter_map(|c| c).collect()
     }
 
     fn create_spawn_turbo_fish_command(&self, sprite_sheet: &Rc<SpriteSheet>) -> GameCommand {
@@ -145,6 +170,23 @@ impl State<Event, GameStateMachine> for InGame {
             }
             next_state
         };
+
+        let mut enemy_count = 0;
+        for c in self.characters.iter() {
+            let c = c.borrow();
+            if let GameCharacter::Ferris(_) = &*c {
+                enemy_count += 1;
+            }
+        }
+
+        if enemy_count == 0 {
+            return GameStateMachine::OutGame(OutGame::new(self.sprite_sheet.clone()));
+        }
+
+        if self.is_game_over {
+            return GameStateMachine::OutGame(OutGame::new(self.sprite_sheet.clone()));
+        }
+
         GameStateMachine::InGame(next_state)
     }
 
