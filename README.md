@@ -5,6 +5,11 @@ The graphics of ferris are derived from [ryanobeirne/ferris](https://github.com/
 ![screen shot](https://raw.githubusercontent.com/ar90n/invade-rs/assets/sc.png)
 
 ## How to Run
+Go to the following URL.
+
+[https://ar90n.github.io/invade-rs/](https://ar90n.github.io/invade-rs/)
+
+Or clone this project and run the following commands.
 
 ```sh
 # Builds the project and opens it in a new browser tab. Auto-reloads when the project changes.
